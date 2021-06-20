@@ -1,10 +1,12 @@
 import tensorflow as tf
+import tensorflow_addons as tfa
 
 
+@tf.function
 def _random_prob():
     return tf.random.uniform([1], minval=0.0, maxval=1.0)[0]
 
-
+@tf.function
 def _random_crop(image, min_crop_ratio: float, max_crop_ratio: float):
     # TODO: We should random crop in a way that the crop has random size but it is a square image
     image_shape = tf.shape(image)
@@ -32,14 +34,17 @@ def random_augment(image, target_height: int, target_width: int, min_crop_ratio:
 
     if _random_prob() > 0.5:
         image = tf.image.random_flip_left_right(image)
-    if _random_prob() > 0.5:
+    if _random_prob() > 0.2:
         image = tf.image.random_saturation(image, 5, 10)
-    if _random_prob() > 0.5:
-        image = tf.image.random_brightness(image, 0.5)
-    if _random_prob() > 0.5:
-        image = tf.image.random_contrast(image, 0.2, 0.5)
-    if _random_prob() > 0.5:
+        image = tf.image.random_brightness(image, 0.4)
+        image = tf.image.random_contrast(image, 0.6, 1.4)
+        image = tf.image.random_hue(image, 0.1)
+    if _random_prob() > 0.8:
         image = tf.image.rgb_to_grayscale(image)
         image = tf.repeat(image, repeats=3, axis=-1)
+    # if _random_prob() > 0.0:
+    #     sigma = _random_prob() * 1.9 + 0.1
+    #     tf.print(sigma)
+    #     image = tfa.image.gaussian_filter2d(image, sigma=sigma)
 
     return image

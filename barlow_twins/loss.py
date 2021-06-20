@@ -12,25 +12,6 @@ def _get_off_diagonal_elements(x):
     return x
 
 
-def loss(z1, z2, _lambda: float):
-    batch_size = tf.shape(z1)[0]
-    embedding_dim = tf.shape(z1)[1]
-
-    # Normalization of the embeddings along the batch dimension, shape: (N, D)
-    z1 = tf.linalg.normalize(z1)[0]
-    z2 = tf.linalg.normalize(z2)[0]
-
-    # Compute cross correlation matrix, shape: (D, D)
-    corr = tf.linalg.matmul(tf.transpose(z1), z2) / tf.cast(batch_size, dtype=tf.float32)
-
-    # Loss
-    corr_diff = tf.pow((corr - tf.eye(embedding_dim)), 2)
-    off_diagonal = _get_off_diagonal_elements(corr_diff)
-    loss = tf.reduce_sum(corr_diff) + _lambda * tf.reduce_sum(off_diagonal)
-
-    return loss
-
-
 def normalize(x, eps=1e-8):
     m = tf.reduce_mean(x, axis=0)
     s = tf.math.reduce_std(x, axis=0)
@@ -38,7 +19,7 @@ def normalize(x, eps=1e-8):
     return res
 
 
-def loss2(z1, z2, _lambda: float):
+def loss(z1, z2, _lambda: float):
     batch_size = tf.shape(z1)[0]
     embedding_dim = tf.shape(z1)[1]
 

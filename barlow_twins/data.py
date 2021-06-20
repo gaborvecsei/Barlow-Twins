@@ -45,7 +45,7 @@ def _make_image_pair_and_augment(image: tf.Tensor, height: int, width: int, min_
 
 
 def create_dataset(folder: Union[Path, str], height: int, width: int, batch_size: int, min_crop_ratio: float = 0.3,
-                   max_crop_ratio: float = 1.0, shuffle_buffer_size: int = 1000) -> tf.data.Dataset:
+                   max_crop_ratio: float = 1.0, shuffle_buffer_size: int = 1000) -> Tuple[tf.data.Dataset, int]:
     image_paths = _get_image_paths(folder)
     image_paths = list(map(str, image_paths))
     dataset = tf.data.Dataset.from_tensor_slices(image_paths)
@@ -54,4 +54,4 @@ def create_dataset(folder: Union[Path, str], height: int, width: int, batch_size
         partial(_make_image_pair_and_augment, height=height, width=width, min_crop_ratio=min_crop_ratio,
                 max_crop_ratio=max_crop_ratio))
     dataset = dataset.shuffle(buffer_size=shuffle_buffer_size).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
-    return dataset
+    return dataset, len(image_paths)
