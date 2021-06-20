@@ -45,9 +45,10 @@ class PreprocessingLayer(tf.keras.layers.Layer):
     @tf.function
     def call(self, inputs, **kwargs):
         # Expected input is in range [0, 255]
-        x = tf.cast(inputs, dtype=tf.float32)
-        x = x / 255.0
+        # x = tf.cast(inputs, dtype=tf.float32)
+        # x = x / 255.0
         # TODO: normalize with global parameters?
+        x = tf.keras.applications.resnet50.preprocess_input(inputs)
         return x
 
 
