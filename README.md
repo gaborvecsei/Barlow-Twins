@@ -2,6 +2,10 @@
 
 Unofficial implementation of the [Barlow Twins Self-Supervised Learning method](https://arxiv.org/abs/2103.03230)
 
+`docker build -t barlow .`
+
+`docker run --rm -it -u $(id -u):$(id -g) --gpus all -v $(pwd):/code -v DATASET:/data -w /code barlow`
+
 # TODOs
 
 - Learning rate scheduler

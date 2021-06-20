@@ -51,6 +51,15 @@ class PreprocessingLayer(tf.keras.layers.Layer):
         return x
 
 
+def print_stats(x):
+    tf.print(x)
+    tf.print(tf.reduce_sum(x))
+    tf.print(tf.reduce_mean(x))
+    tf.print(tf.math.reduce_std(x))
+
+    tf.print("--------")
+
+
 class BarlowTwinsModel(tf.keras.models.Model):
 
     def __init__(self, input_height: int, input_width: int, projection_units: int, load_imagenet: bool = False, *args,
