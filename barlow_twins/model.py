@@ -22,6 +22,9 @@ class _ProjectorBlock(tf.keras.layers.Layer):
 
 
 class _ProjectionLayer(tf.keras.layers.Layer):
+    """
+    Last projection layer attached directly to the output of the backbone's last later (w/ GlobalAveragePooling)
+    """
 
     def __init__(self, units: int = 8192, **kwargs):
         super().__init__(**kwargs)
@@ -40,27 +43,18 @@ class _ProjectionLayer(tf.keras.layers.Layer):
 
 
 class PreprocessingLayer(tf.keras.layers.Layer):
+    """
+    This layer handles the preprocessing of the images (who would have guessed this based on the name? :D)
+    Input images are in range [0, 255] without normalization
+    """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     @tf.function
     def call(self, inputs, **kwargs):
-        # Expected input is in range [0, 255]
-        # x = tf.cast(inputs, dtype=tf.float32)
-        # x = x / 255.0
-        # TODO: normalize with global parameters?
         x = tf.keras.applications.resnet50.preprocess_input(inputs)
         return x
-
-
-def print_stats(x):
-    tf.print(x)
-    tf.print(tf.reduce_sum(x))
-    tf.print(tf.reduce_mean(x))
-    tf.print(tf.math.reduce_std(x))
-
-    tf.print("--------")
 
 
 class BarlowTwinsModel(tf.keras.models.Model):
@@ -70,12 +64,14 @@ class BarlowTwinsModel(tf.keras.models.Model):
                  input_width: int,
                  projection_units: int,
                  load_imagenet: bool = False,
+                 drop_projection_layer: bool = False,
                  *args,
                  **kwargs):
         super().__init__(*args, **kwargs)
         self._projection_units = projection_units
         self.input_height = input_height
         self.input_width = input_width
+        self.drop_projection_layer = drop_projection_layer
 
         weights = None
         if load_imagenet:
@@ -96,9 +92,10 @@ class BarlowTwinsModel(tf.keras.models.Model):
     def call(self, inputs, training=None, mask=None):
         x = self.preprocessing(inputs)
         x = self.backbone(x)
-        x = self.projector(x)
+        if not self.drop_projection_layer:
+            x = self.projector(x)
         return x
 
     def get_config(self):
         # TODO
-        pass
+        raise NotImplementedError()

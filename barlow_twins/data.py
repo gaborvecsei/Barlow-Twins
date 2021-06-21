@@ -8,6 +8,10 @@ import barlow_twins
 
 
 def _get_image_paths(folder: Union[Path, str], image_extensions: Tuple[str] = None) -> List[Path]:
+    """
+    Given a base folder collects all the images (recoursively) and returns with a list of individual image paths
+    """
+
     if image_extensions is None:
         image_extensions = ("jpg", "jpeg", "png")
 
@@ -23,7 +27,12 @@ def _get_image_paths(folder: Union[Path, str], image_extensions: Tuple[str] = No
 
 @tf.function
 def _read_image_from_path(image_path) -> tf.Tensor:
+    """
+    Read the image to a Tensor
+    """
+
     image = tf.io.read_file(image_path)
+    # "decode_image" is used instead of "decode_jpeg" as we support multiple image formats
     image = tf.image.decode_image(image, channels=3, dtype=tf.uint8, expand_animations=False)
     return image
 
@@ -31,6 +40,10 @@ def _read_image_from_path(image_path) -> tf.Tensor:
 @tf.function
 def _make_image_pair_and_augment(image: tf.Tensor, height: int, width: int, min_crop_ratio: float,
                                  max_crop_ratio: float) -> Tuple[tf.Tensor, tf.Tensor]:
+    """
+    Creates the image pair (same image) and (random) augments them separately
+    """
+
     fn = partial(barlow_twins.random_augment,
                  target_height=height,
                  target_width=width,
@@ -46,6 +59,17 @@ def create_dataset(folder: Union[Path, str],
                    min_crop_ratio: float = 0.3,
                    max_crop_ratio: float = 1.0,
                    shuffle_buffer_size: int = 1000) -> Tuple[tf.data.Dataset, int]:
+    """
+    Creation of the tf.data.Dataset object for training purposes
+    Handles the following:
+        - Read the image
+        - Prepare pairs of images
+        - Augment image pair separately
+    Output image tensor has it's values in the range of [0, 255]
+
+    (Normalization and other "low-level" preprocessings are handled in the model itself)
+    """
+
     image_paths = _get_image_paths(folder)
     image_paths = list(map(str, image_paths))
 
