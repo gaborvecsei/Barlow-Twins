@@ -1,13 +1,3 @@
-"""
-Used augmentation in paper:
-- random crop
-- resize to 224
-- horizontal flip
-- color jitter
-- grayscale conversion
-- Gaussian blurring
-- Solarization
-"""
 from functools import partial
 from pathlib import Path
 from typing import Union, Tuple, List
@@ -41,20 +31,31 @@ def _read_image_from_path(image_path) -> tf.Tensor:
 @tf.function
 def _make_image_pair_and_augment(image: tf.Tensor, height: int, width: int, min_crop_ratio: float,
                                  max_crop_ratio: float) -> Tuple[tf.Tensor, tf.Tensor]:
-    fn = partial(barlow_twins.random_augment, target_height=height, target_width=width, min_crop_ratio=min_crop_ratio,
+    fn = partial(barlow_twins.random_augment,
+                 target_height=height,
+                 target_width=width,
+                 min_crop_ratio=min_crop_ratio,
                  max_crop_ratio=max_crop_ratio)
     return fn(image), fn(image)
 
 
-def create_dataset(folder: Union[Path, str], height: int, width: int, batch_size: int, min_crop_ratio: float = 0.3,
-                   max_crop_ratio: float = 1.0, shuffle_buffer_size: int = 1000) -> Tuple[tf.data.Dataset, int]:
+def create_dataset(folder: Union[Path, str],
+                   height: int,
+                   width: int,
+                   batch_size: int,
+                   min_crop_ratio: float = 0.3,
+                   max_crop_ratio: float = 1.0,
+                   shuffle_buffer_size: int = 1000) -> Tuple[tf.data.Dataset, int]:
     image_paths = _get_image_paths(folder)
     image_paths = list(map(str, image_paths))
 
     dataset = tf.data.Dataset.from_tensor_slices(image_paths)
     dataset = dataset.map(_read_image_from_path, num_parallel_calls=tf.data.AUTOTUNE)
-    dataset = dataset.map(
-        partial(_make_image_pair_and_augment, height=height, width=width, min_crop_ratio=min_crop_ratio,
-                max_crop_ratio=max_crop_ratio), num_parallel_calls=tf.data.AUTOTUNE)
+    dataset = dataset.map(partial(_make_image_pair_and_augment,
+                                  height=height,
+                                  width=width,
+                                  min_crop_ratio=min_crop_ratio,
+                                  max_crop_ratio=max_crop_ratio),
+                          num_parallel_calls=tf.data.AUTOTUNE)
     dataset = dataset.shuffle(buffer_size=shuffle_buffer_size).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
     return dataset, len(image_paths)

@@ -4,11 +4,8 @@ import barlow_twins
 
 
 @tf.function
-def train_step(model: tf.keras.models.Model,
-               optimizer: tf.keras.optimizers.Optimizer,
-               image_pairs: tf.Tensor,
-               _lambda: float,
-               mixed_precision:bool) -> float:
+def train_step(model: tf.keras.models.Model, optimizer: tf.keras.optimizers.Optimizer, image_pairs: tf.Tensor,
+               _lambda: float, mixed_precision: bool) -> float:
     images_1 = image_pairs[0]
     images_2 = image_pairs[1]
 

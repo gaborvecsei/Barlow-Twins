@@ -6,6 +6,7 @@ import tensorflow_addons as tfa
 def _random_prob():
     return tf.random.uniform([1], minval=0.0, maxval=1.0)[0]
 
+
 @tf.function
 def _random_crop(image, min_crop_ratio: float, max_crop_ratio: float):
     # TODO: We should random crop in a way that the crop has random size but it is a square image

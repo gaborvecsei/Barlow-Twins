@@ -32,10 +32,9 @@ class WarmUpCosineDecayScheduler(tf.keras.optimizers.schedules.LearningRateSched
         warmup_steps = math_ops.cast(self.warmup_steps, dtype)
         hold_base_rate_steps = math_ops.cast(self.hold_base_rate_steps, dtype)
 
-        learning_rate = 0.5 * learning_rate_base * (1 + tf.cos(
-            3.141592 *
-            (global_step - warmup_steps - hold_base_rate_steps
-             ) / tf.cast(total_steps - warmup_steps - hold_base_rate_steps, dtype=dtype)))
+        learning_rate = 0.5 * learning_rate_base * (
+            1 + tf.cos(3.141592 * (global_step - warmup_steps - hold_base_rate_steps) /
+                       tf.cast(total_steps - warmup_steps - hold_base_rate_steps, dtype=dtype)))
 
         learning_rate = tf.where(global_step > warmup_steps + hold_base_rate_steps, learning_rate, learning_rate_base)
 

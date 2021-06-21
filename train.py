@@ -6,7 +6,6 @@ import tensorflow as tf
 
 import barlow_twins
 
-
 IMAGE_HEIGHT = 224
 IMAGE_WIDTH = 224
 PROJECTOR_DIMS = 8192
@@ -40,11 +39,18 @@ else:
     experiment_folder.mkdir(parents=True)
     pass
 
-dataset, nb_images = barlow_twins.create_dataset(IMAGES_FOLDER, height=IMAGE_HEIGHT, width=IMAGE_WIDTH, batch_size=BATCH_SIZE,
-                                      min_crop_ratio=0.8, max_crop_ratio=1.0, shuffle_buffer_size=1000)
+dataset, nb_images = barlow_twins.create_dataset(IMAGES_FOLDER,
+                                                 height=IMAGE_HEIGHT,
+                                                 width=IMAGE_WIDTH,
+                                                 batch_size=BATCH_SIZE,
+                                                 min_crop_ratio=0.8,
+                                                 max_crop_ratio=1.0,
+                                                 shuffle_buffer_size=1000)
 
-model = barlow_twins.BarlowTwinsModel(input_height=IMAGE_HEIGHT, input_width=IMAGE_WIDTH,
-                                      projection_units=PROJECTOR_DIMS, load_imagenet=False)
+model = barlow_twins.BarlowTwinsModel(input_height=IMAGE_HEIGHT,
+                                      input_width=IMAGE_WIDTH,
+                                      projection_units=PROJECTOR_DIMS,
+                                      load_imagenet=False)
 dummy_input = np.zeros((BATCH_SIZE, IMAGE_HEIGHT, IMAGE_WIDTH, 3), dtype=np.float32)
 _ = model(dummy_input)
 

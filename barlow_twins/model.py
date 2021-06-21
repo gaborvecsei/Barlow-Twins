@@ -40,6 +40,7 @@ class _ProjectionLayer(tf.keras.layers.Layer):
 
 
 class PreprocessingLayer(tf.keras.layers.Layer):
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -64,7 +65,12 @@ def print_stats(x):
 
 class BarlowTwinsModel(tf.keras.models.Model):
 
-    def __init__(self, input_height: int, input_width: int, projection_units: int, load_imagenet: bool = False, *args,
+    def __init__(self,
+                 input_height: int,
+                 input_width: int,
+                 projection_units: int,
+                 load_imagenet: bool = False,
+                 *args,
                  **kwargs):
         super().__init__(*args, **kwargs)
         self._projection_units = projection_units

@@ -26,8 +26,8 @@ def loss(z1, z2, _lambda: float):
     batch_size = tf.shape(z1)[0]
 
     # Normalization of the embeddings along the batch dimension, shape: (N, D)
-    z1 = normalize(z1) 
-    z2 = normalize(z2) 
+    z1 = normalize(z1)
+    z2 = normalize(z2)
 
     c = tf.transpose(z1) @ z2
     c = c / tf.cast(batch_size, dtype=tf.float32)
