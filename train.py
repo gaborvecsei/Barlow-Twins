@@ -38,7 +38,8 @@ dataset, nb_images = barlow_twins.create_dataset(args.data,
 model = barlow_twins.BarlowTwinsModel(input_height=args.height,
                                       input_width=args.width,
                                       projection_units=args.projector_units,
-                                      load_imagenet=False)
+                                      load_imagenet=False,
+                                      drop_projection_layer=False)
 dummy_input = np.zeros((args.batch_size, args.height, args.width, 3), dtype=np.float32)
 _ = model(dummy_input)
 

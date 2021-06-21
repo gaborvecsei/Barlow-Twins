@@ -64,14 +64,14 @@ class BarlowTwinsModel(tf.keras.models.Model):
                  input_width: int,
                  projection_units: int,
                  load_imagenet: bool = False,
-                 inference_mode: bool = False,
+                 drop_projection_layer: bool = False,
                  *args,
                  **kwargs):
         super().__init__(*args, **kwargs)
         self._projection_units = projection_units
         self.input_height = input_height
         self.input_width = input_width
-        self.inference_mode = inference_mode
+        self.drop_projection_layer = drop_projection_layer
 
         weights = None
         if load_imagenet:
@@ -92,7 +92,7 @@ class BarlowTwinsModel(tf.keras.models.Model):
     def call(self, inputs, training=None, mask=None):
         x = self.preprocessing(inputs)
         x = self.backbone(x)
-        if not self.inference_mode:
+        if not self.drop_projection_layer:
             x = self.projector(x)
         return x
 
