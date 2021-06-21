@@ -10,7 +10,7 @@ import barlow_twins
 IMAGE_HEIGHT = 224
 IMAGE_WIDTH = 224
 PROJECTOR_DIMS = 8192
-BATCH_SIZE = 128
+BATCH_SIZE = 256
 IMAGES_FOLDER = "/data"
 EPOCHS = 200
 _LAMBDA = 5e-3
@@ -18,7 +18,8 @@ LEARNING_RATE = 1e-4
 WARMUP_EPOCHS = 5
 EXPERIMENT_NAME = "test_adam"
 LOG_FOLDER = "logs"
-MIXED_PRECISION = False
+MIXED_PRECISION = True
+PRINT_FREQ = 10
 
 # tf.config.run_functions_eagerly(True)
 
@@ -78,7 +79,7 @@ for epoch in range(EPOCHS):
         tf.summary.scalar("loss", loss, global_step)
         tf.summary.scalar("lr", optimizer.learning_rate(global_step), global_step)
 
-        if step % 50 == 0 and step != 0:
+        if step % PRINT_FREQ == 0 and step != 0:
             print(f"\tStep {step} (global step {global_step}: loss {loss_metric.result():.4f}")
 
         global_step += 1

@@ -31,12 +31,14 @@ def _get_image_paths(folder: Union[Path, str], image_extensions: Tuple[str] = No
     return image_list
 
 
+@tf.function
 def _read_image_from_path(image_path) -> tf.Tensor:
     image = tf.io.read_file(image_path)
     image = tf.image.decode_image(image, channels=3, dtype=tf.uint8, expand_animations=False)
     return image
 
 
+@tf.function
 def _make_image_pair_and_augment(image: tf.Tensor, height: int, width: int, min_crop_ratio: float,
                                  max_crop_ratio: float) -> Tuple[tf.Tensor, tf.Tensor]:
     fn = partial(barlow_twins.random_augment, target_height=height, target_width=width, min_crop_ratio=min_crop_ratio,
@@ -48,10 +50,11 @@ def create_dataset(folder: Union[Path, str], height: int, width: int, batch_size
                    max_crop_ratio: float = 1.0, shuffle_buffer_size: int = 1000) -> Tuple[tf.data.Dataset, int]:
     image_paths = _get_image_paths(folder)
     image_paths = list(map(str, image_paths))
+
     dataset = tf.data.Dataset.from_tensor_slices(image_paths)
-    dataset = dataset.map(_read_image_from_path)
+    dataset = dataset.map(_read_image_from_path, num_parallel_calls=tf.data.AUTOTUNE)
     dataset = dataset.map(
         partial(_make_image_pair_and_augment, height=height, width=width, min_crop_ratio=min_crop_ratio,
-                max_crop_ratio=max_crop_ratio))
+                max_crop_ratio=max_crop_ratio), num_parallel_calls=tf.data.AUTOTUNE)
     dataset = dataset.shuffle(buffer_size=shuffle_buffer_size).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
     return dataset, len(image_paths)
