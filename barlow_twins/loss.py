@@ -43,9 +43,11 @@ def loss(z1, z2, _lambda: float) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     c = tf.transpose(z1) @ z2
     c = c / tf.cast(batch_size, dtype=tf.float32)
 
+    # This is the invariance term
     on_diag = tf.pow(tf.linalg.diag_part(c) - 1, 2)
     on_diag = tf.reduce_sum(on_diag)
 
+    # This is the redundancy reduction term
     off_diag = tf.pow(_get_off_diagonal_elements(c), 2)
     off_diag = tf.reduce_sum(off_diag)
     off_diag = _lambda * off_diag

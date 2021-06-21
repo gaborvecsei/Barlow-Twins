@@ -71,10 +71,16 @@ global_step = 0
 for epoch in range(args.epochs):
     print(f"Epoch {epoch} -------------")
     for step_in_epoch, image_pairs in enumerate(dataset):
-        loss = barlow_twins.train_step(model, optimizer, image_pairs, args.lmbda, mixed_precision=args.mixed_precision)
+        loss, on_diag_loss, off_diag_loss = barlow_twins.train_step(model,
+                                                                    optimizer,
+                                                                    image_pairs,
+                                                                    args.lmbda,
+                                                                    mixed_precision=args.mixed_precision)
 
         loss_metric(loss)
-        tf.summary.scalar("loss", loss, global_step)
+        tf.summary.scalar("loss/loss", loss, global_step)
+        tf.summary.scalar("loss/on_diag_loss", on_diag_loss, global_step)
+        tf.summary.scalar("loss/off_diag_loss", off_diag_loss, global_step)
         tf.summary.scalar("lr", optimizer.learning_rate(global_step), global_step)
 
         if step_in_epoch % args.print_freq == 0 and step_in_epoch != 0:
