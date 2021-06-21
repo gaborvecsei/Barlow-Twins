@@ -20,8 +20,10 @@ def normalize(x, eps=1e-8):
 
 
 def loss(z1, z2, _lambda: float):
+    z1 = tf.cast(z1, dtype=tf.float32)
+    z2 = tf.cast(z2, dtype=tf.float32)
+
     batch_size = tf.shape(z1)[0]
-    embedding_dim = tf.shape(z1)[1]
 
     # Normalization of the embeddings along the batch dimension, shape: (N, D)
     z1 = normalize(z1) 

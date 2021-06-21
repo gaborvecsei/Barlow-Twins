@@ -6,10 +6,6 @@ import tensorflow as tf
 
 import barlow_twins
 
-# tf.config.run_functions_eagerly(True)
-
-physical_devices = tf.config.list_physical_devices("GPU")
-_ = [tf.config.experimental.set_memory_growth(x, True) for x in physical_devices]
 
 IMAGE_HEIGHT = 224
 IMAGE_WIDTH = 224
@@ -22,6 +18,16 @@ LEARNING_RATE = 1e-4
 WARMUP_EPOCHS = 5
 EXPERIMENT_NAME = "test_adam"
 LOG_FOLDER = "logs"
+MIXED_PRECISION = False
+
+# tf.config.run_functions_eagerly(True)
+
+physical_devices = tf.config.list_physical_devices("GPU")
+_ = [tf.config.experimental.set_memory_growth(x, True) for x in physical_devices]
+
+if MIXED_PRECISION:
+    policy = tf.keras.mixed_precision.Policy('mixed_float16')
+    tf.keras.mixed_precision.set_global_policy(policy)
 
 experiment_folder = Path(LOG_FOLDER) / EXPERIMENT_NAME
 if not experiment_folder.exists():
@@ -54,6 +60,9 @@ lr_scheduler = barlow_twins.WarmUpCosineDecayScheduler(learning_rate_base=LEARNI
 optimizer = tf.keras.optimizers.Adam(learning_rate=lr_scheduler, decay=1.5e-6)
 # optimizer = tf.keras.optimizers.SGD(learning_rate=lr_scheduler, momentum=0.9)
 
+if MIXED_PRECISION:
+    optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer)
+
 loss_metric = tf.keras.metrics.Mean(name="mean_loss")
 tb_file_writer = tf.summary.create_file_writer(str(experiment_folder))
 tb_file_writer.set_as_default()
@@ -63,7 +72,7 @@ global_step = 0
 for epoch in range(EPOCHS):
     print(f"Epoch {epoch} -------------")
     for step, image_pairs in enumerate(dataset):
-        loss = barlow_twins.train_step(model, optimizer, image_pairs, _LAMBDA)
+        loss = barlow_twins.train_step(model, optimizer, image_pairs, _LAMBDA, mixed_precision=MIXED_PRECISION)
 
         loss_metric(loss)
         tf.summary.scalar("loss", loss, global_step)

@@ -3,14 +3,14 @@ import tensorflow as tf
 
 class _ProjectorBlock(tf.keras.layers.Layer):
 
-    def __init__(self, units: int, last_block: bool, **kwargs):
+    def __init__(self, units: int, last_block: bool, output_dtype=None, **kwargs):
         super().__init__(**kwargs)
         self._units = units
         self._last_block = last_block
 
         self.dense = tf.keras.layers.Dense(self._units, use_bias=False)
         self.batch_norm = tf.keras.layers.BatchNormalization()
-        self.relu = tf.keras.layers.ReLU(max_value=None)
+        self.relu = tf.keras.layers.ReLU(max_value=None, dtype=output_dtype)
 
     def call(self, inputs, **kwargs):
         x = self.dense(inputs)
@@ -29,7 +29,8 @@ class _ProjectionLayer(tf.keras.layers.Layer):
 
         self.p1 = _ProjectorBlock(units=self._units, last_block=False)
         self.p2 = _ProjectorBlock(units=self._units, last_block=False)
-        self.p3 = _ProjectorBlock(units=self._units, last_block=True)
+        # Dtype is float32 for the output (activation) which is needed because of the mixed precision
+        self.p3 = _ProjectorBlock(units=self._units, last_block=True, output_dtype=tf.float32)
 
     def call(self, inputs, **kwargs):
         x = self.p1(inputs)
