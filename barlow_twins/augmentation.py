@@ -8,6 +8,12 @@ def _random_prob():
 
 @tf.function
 def _random_crop(image, min_crop_ratio: float, max_crop_ratio: float):
+    """
+    Randomly crops an image while keeping it's original aspect ratio
+    Crop size is determined by the min, max parameters and the image original size
+    (e.g. new_height = original_height * random(min, max)
+    """
+
     image_shape = tf.shape(image)
     height = tf.cast(image_shape[0], dtype=tf.float32)
     width = tf.cast(image_shape[1], dtype=tf.float32)
@@ -23,6 +29,11 @@ def _random_crop(image, min_crop_ratio: float, max_crop_ratio: float):
 
 
 def random_augment(image, target_height: int, target_width: int, min_crop_ratio: float, max_crop_ratio: float):
+    """
+    Random augmentation for a single image
+    Output image values are still in the range of [0, 255]
+    """
+
     # Random cropping and resizing always applied
     image = _random_crop(image, min_crop_ratio, max_crop_ratio)
     image = tf.image.resize(image, (target_height, target_width))

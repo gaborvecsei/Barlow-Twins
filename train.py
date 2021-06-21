@@ -31,7 +31,7 @@ dataset, nb_images = barlow_twins.create_dataset(args.data,
                                                  height=args.height,
                                                  width=args.width,
                                                  batch_size=args.batch_size,
-                                                 min_crop_ratio=0.8,
+                                                 min_crop_ratio=0.6,
                                                  max_crop_ratio=1.0,
                                                  shuffle_buffer_size=1000)
 
@@ -70,15 +70,15 @@ global_step = 0
 
 for epoch in range(args.epochs):
     print(f"Epoch {epoch} -------------")
-    for step, image_pairs in enumerate(dataset):
+    for step_in_epoch, image_pairs in enumerate(dataset):
         loss = barlow_twins.train_step(model, optimizer, image_pairs, args.lmbda, mixed_precision=args.mixed_precision)
 
         loss_metric(loss)
         tf.summary.scalar("loss", loss, global_step)
         tf.summary.scalar("lr", optimizer.learning_rate(global_step), global_step)
 
-        if step % args.print_freq == 0 and step != 0:
-            print(f"\tStep {step} (global step {global_step}: loss {loss_metric.result():.4f}")
+        if step_in_epoch % args.print_freq == 0 and step_in_epoch != 0:
+            print(f"\tStep {step_in_epoch} (global step {global_step}: loss {loss_metric.result():.4f}")
 
         global_step += 1
 
