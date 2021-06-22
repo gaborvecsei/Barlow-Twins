@@ -21,7 +21,7 @@ class _ProjectorBlock(tf.keras.layers.Layer):
         return x
 
 
-class _ProjectionLayer(tf.keras.layers.Layer):
+class ProjectionLayer(tf.keras.layers.Layer):
     """
     Last projection layer attached directly to the output of the backbone's last later (w/ GlobalAveragePooling)
     """
@@ -86,13 +86,15 @@ class BarlowTwinsModel(tf.keras.models.Model):
                                                                 input_shape=(self.input_height, self.input_width, 3),
                                                                 pooling="avg")
 
-        self.projector = _ProjectionLayer(units=self._projection_units)
+        self.projector = None
+        if not self.drop_projection_layer:
+            self.projector = ProjectionLayer(units=self._projection_units)
 
     @tf.function
     def call(self, inputs, training=None, mask=None):
         x = self.preprocessing(inputs)
         x = self.backbone(x)
-        if not self.drop_projection_layer:
+        if self.projector is not None:
             x = self.projector(x)
         return x
 
