@@ -1,3 +1,4 @@
+tqdm
 numpy
 matplotlib
 jupyterlab
@@ -5,4 +6,5 @@ pudb
 # Install tensorflow as you please (or if you use the container - it is in the Docker image)
 # tensorflow==2.4.2
 tensorflow_addons
+scikit-learn
 
