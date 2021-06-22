@@ -36,7 +36,6 @@ def random_augment(image, target_height: int, target_width: int, min_crop_ratio:
 
     # Random cropping and resizing always applied
     image = _random_crop(image, min_crop_ratio, max_crop_ratio)
-    image = tf.image.resize(image, (target_height, target_width))
 
     if _random_prob() > 0.5:
         image = tf.image.random_flip_left_right(image)

@@ -58,7 +58,8 @@ def create_dataset(folder: Union[Path, str],
                    batch_size: int,
                    min_crop_ratio: float = 0.3,
                    max_crop_ratio: float = 1.0,
-                   shuffle_buffer_size: int = 1000) -> Tuple[tf.data.Dataset, int]:
+                   shuffle_buffer_size: int = 1000,
+                   test_dataset: bool = False) -> Tuple[tf.data.Dataset, int]:
     """
     Creation of the tf.data.Dataset object for training purposes
     Handles the following:
@@ -75,11 +76,17 @@ def create_dataset(folder: Union[Path, str],
 
     dataset = tf.data.Dataset.from_tensor_slices(image_paths)
     dataset = dataset.map(_read_image_from_path, num_parallel_calls=tf.data.AUTOTUNE)
-    dataset = dataset.map(partial(_make_image_pair_and_augment,
-                                  height=height,
-                                  width=width,
-                                  min_crop_ratio=min_crop_ratio,
-                                  max_crop_ratio=max_crop_ratio),
-                          num_parallel_calls=tf.data.AUTOTUNE)
-    dataset = dataset.shuffle(buffer_size=shuffle_buffer_size).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
+
+    if not test_dataset:
+        dataset = dataset.map(partial(_make_image_pair_and_augment,
+                                      height=height,
+                                      width=width,
+                                      min_crop_ratio=min_crop_ratio,
+                                      max_crop_ratio=max_crop_ratio),
+                              num_parallel_calls=tf.data.AUTOTUNE)
+        dataset = dataset.shuffle(buffer_size=shuffle_buffer_size)
+
+    dataset = dataset.map(partial(tf.image.resize, size=(height, width)), num_parallel_calls=tf.data.AUTOTUNE)
+
+    dataset = dataset.batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
     return dataset, len(image_paths)
