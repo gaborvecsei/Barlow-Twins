@@ -37,21 +37,6 @@ def _read_image_from_path(image_path) -> tf.Tensor:
     return image
 
 
-@tf.function
-def _make_image_pair_and_augment(image: tf.Tensor, height: int, width: int, min_crop_ratio: float,
-                                 max_crop_ratio: float) -> Tuple[tf.Tensor, tf.Tensor]:
-    """
-    Creates the image pair (same image) and (random) augments them separately
-    """
-
-    fn = partial(barlow_twins.random_augment,
-                 target_height=height,
-                 target_width=width,
-                 min_crop_ratio=min_crop_ratio,
-                 max_crop_ratio=max_crop_ratio)
-    return fn(image), fn(image)
-
-
 def create_dataset(folder: Union[Path, str],
                    height: int,
                    width: int,
@@ -78,15 +63,28 @@ def create_dataset(folder: Union[Path, str],
     dataset = dataset.map(_read_image_from_path, num_parallel_calls=tf.data.AUTOTUNE)
 
     if not test_dataset:
-        dataset = dataset.map(partial(_make_image_pair_and_augment,
-                                      height=height,
-                                      width=width,
-                                      min_crop_ratio=min_crop_ratio,
-                                      max_crop_ratio=max_crop_ratio),
-                              num_parallel_calls=tf.data.AUTOTUNE)
+        augment_function = partial(barlow_twins.random_augment,
+                                   target_height=height,
+                                   target_width=width,
+                                   min_crop_ratio=min_crop_ratio,
+                                   max_crop_ratio=max_crop_ratio)
+        # Create image pair and augment them separately
+        dataset = dataset.map(lambda x: (augment_function(x), augment_function(x)), num_parallel_calls=tf.data.AUTOTUNE)
+
+        # Resize both images
+        dataset = dataset.map(
+            lambda x, y:
+            (tf.image.resize(x, size=(height, width)), tf.image.resize(y, size=(height, width))),
+            num_parallel_calls=tf.data.AUTOTUNE)
+
+        # Shuffle the dataset of image pairs
         dataset = dataset.shuffle(buffer_size=shuffle_buffer_size)
+    else:
+        # Resize image
+        dataset = dataset.map(lambda x: tf.image.resize(x, size=(height, width)),
+                              num_parallel_calls=tf.data.AUTOTUNE)
 
-    dataset = dataset.map(partial(tf.image.resize, size=(height, width)), num_parallel_calls=tf.data.AUTOTUNE)
-
+    # Batch and prefetch the data
     dataset = dataset.batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
+
     return dataset, len(image_paths)
