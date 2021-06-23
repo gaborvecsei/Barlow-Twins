@@ -7,4 +7,5 @@ pudb
 # tensorflow==2.4.2
 tensorflow_addons
 scikit-learn
+scipy
 
