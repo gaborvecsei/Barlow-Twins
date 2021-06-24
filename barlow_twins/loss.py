@@ -41,6 +41,7 @@ def loss(z1, z2, _lambda: float) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     z2 = normalize(z2)
 
     c = tf.transpose(z1) @ z2
+    # TODO: should I remove this?
     c = c / tf.cast(batch_size, dtype=tf.float32)
 
     # This is the invariance term
@@ -53,4 +54,4 @@ def loss(z1, z2, _lambda: float) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     off_diag = _lambda * off_diag
 
     loss = on_diag + off_diag
-    return loss, on_diag, off_diag
+    return loss
