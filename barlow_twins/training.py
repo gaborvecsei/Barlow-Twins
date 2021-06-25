@@ -14,8 +14,7 @@ def train_step(model: tf.keras.models.Model, optimizer: tf.keras.optimizers.Opti
     with tf.GradientTape() as tape:
         z1 = model(images_1, training=True)
         z2 = model(images_2, training=True)
-        loss = barlow_twins.loss(z1, z2, _lambda)
-        loss = loss / global_batch_size
+        loss = barlow_twins.loss(z1, z2, _lambda, global_batch_size)
         if mixed_precision:
             scaled_loss = optimizer.get_scaled_loss(loss)
 
