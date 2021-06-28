@@ -1,4 +1,3 @@
-import argparse
 import json
 from pathlib import Path
 import shutil
@@ -27,70 +26,76 @@ experiment_folder.mkdir(parents=True)
 
 (experiment_folder / "args.json").write_text(json.dumps(args.__dict__))
 
+mirrored_strategy = tf.distribute.MirroredStrategy()
+
+global_batch_size = args.batch_size * mirrored_strategy.num_replicas_in_sync
 dataset, nb_images = barlow_twins.create_dataset(args.data,
                                                  height=args.height,
                                                  width=args.width,
-                                                 batch_size=args.batch_size,
+                                                 batch_size=global_batch_size,
                                                  min_crop_ratio=0.6,
                                                  max_crop_ratio=1.0,
                                                  shuffle_buffer_size=1000)
+dataset = mirrored_strategy.experimental_distribute_dataset(dataset)
 
-model = barlow_twins.BarlowTwinsModel(input_height=args.height,
-                                      input_width=args.width,
-                                      projection_units=args.projector_units,
-                                      load_imagenet=False,
-                                      drop_projection_layer=False)
-dummy_input = np.zeros((args.batch_size, args.height, args.width, 3), dtype=np.float32)
-_ = model(dummy_input)
+with mirrored_strategy.scope():
+    model = barlow_twins.BarlowTwinsModel(input_height=args.height,
+                                          input_width=args.width,
+                                          projection_units=args.projector_units,
+                                          load_imagenet=False,
+                                          drop_projection_layer=False)
+    dummy_input = np.zeros((args.batch_size, args.height, args.width, 3), dtype=np.float32)
+    _ = model(dummy_input)
 
-steps_per_epoch = nb_images // args.batch_size
-total_steps = args.epochs * steps_per_epoch
-warmup_steps = args.lr_warmup_epochs * steps_per_epoch
-print(f"Steps per epoch {steps_per_epoch}, total steps {total_steps}, warmup steps {warmup_steps}")
-lr_scheduler = barlow_twins.WarmUpCosineDecayScheduler(learning_rate_base=args.learning_rate,
-                                                       total_steps=total_steps,
-                                                       global_step_init=0,
-                                                       warmup_learning_rate=0,
-                                                       warmup_steps=warmup_steps,
-                                                       hold_base_rate_steps=0)
-if args.optimizer == "adam":
-    optimizer = tf.keras.optimizers.Adam(learning_rate=lr_scheduler, decay=1.5e-6)
-elif args.optimizer == "sgd":
-    optimizer = tf.keras.optimizers.SGD(learning_rate=lr_scheduler, momentum=0.9)
-else:
-    raise RuntimeError(f"Optimizer {args.optimizer} is not a valid option")
+    steps_per_epoch = nb_images // args.batch_size
+    total_steps = args.epochs * steps_per_epoch
+    warmup_steps = args.lr_warmup_epochs * steps_per_epoch
+    print(f"Steps per epoch {steps_per_epoch}, total steps {total_steps}, warmup steps {warmup_steps}")
+    lr_scheduler = barlow_twins.WarmUpCosineDecayScheduler(learning_rate_base=args.learning_rate,
+                                                           total_steps=total_steps,
+                                                           global_step_init=0,
+                                                           warmup_learning_rate=0,
+                                                           warmup_steps=warmup_steps,
+                                                           hold_base_rate_steps=0)
+    if args.optimizer == "adam":
+        optimizer = tf.keras.optimizers.Adam(learning_rate=lr_scheduler, decay=1.5e-6)
+    elif args.optimizer == "sgd":
+        optimizer = tf.keras.optimizers.SGD(learning_rate=lr_scheduler, momentum=0.9)
+    else:
+        raise RuntimeError(f"Optimizer {args.optimizer} is not a valid option")
 
-if args.mixed_precision:
-    optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer)
+    if args.mixed_precision:
+        optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer)
 
-loss_metric = tf.keras.metrics.Mean(name="mean_loss")
 tb_file_writer = tf.summary.create_file_writer(str(experiment_folder))
 tb_file_writer.set_as_default()
 
-global_step = 0
+global_step: int = 0
 
 for epoch in range(args.epochs):
     print(f"Epoch {epoch} -------------")
-    for step_in_epoch, image_pairs in enumerate(dataset):
-        loss, on_diag_loss, off_diag_loss = barlow_twins.train_step(model,
-                                                                    optimizer,
-                                                                    image_pairs,
-                                                                    args.lmbda,
-                                                                    mixed_precision=args.mixed_precision)
 
-        loss_metric(loss)
+    total_loss: float = 0.0
+    num_batches: int = 0
+
+    for step_in_epoch, image_pairs in enumerate(dataset):
+        loss = barlow_twins.distributed_train_step(mirrored_strategy, model, optimizer, image_pairs, args.lmbda,
+                                                   args.mixed_precision, global_batch_size)
+
+        total_loss += loss
+        num_batches += 1
+
         tf.summary.scalar("loss/loss", loss, global_step)
-        tf.summary.scalar("loss/on_diag_loss", on_diag_loss, global_step)
-        tf.summary.scalar("loss/off_diag_loss", off_diag_loss, global_step)
         tf.summary.scalar("lr", optimizer.learning_rate(global_step), global_step)
 
         if step_in_epoch % args.print_freq == 0 and step_in_epoch != 0:
-            print(f"\tStep {step_in_epoch} (global step {global_step}: loss {loss_metric.result():.4f}")
+            tmp_train_loss = total_loss / num_batches
+            print(f"\tStep {step_in_epoch} (global step {global_step}: loss {tmp_train_loss:.4f}")
 
         global_step += 1
 
-    print(f"Epoch {epoch}: Loss {loss_metric.result():.4f}")
+    train_loss_epoch = total_loss / num_batches
 
-    loss_metric.reset_states()
+    print(f"Epoch {epoch}: Loss {train_loss_epoch:.4f}")
 
     model.save_weights(str(experiment_folder / f"checkpoint.h5"))
