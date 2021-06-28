@@ -21,7 +21,7 @@ def _get_off_diagonal_elements(x):
 def normalize(x, eps=1e-8):
     """
     Normalization along the batch dimension
-    (eps is needed to handle when std is 0)
+    (eps is needed to handle when std is 0, otherwise the loss would be NaN)
     """
 
     m = tf.reduce_mean(x, axis=0)
@@ -30,7 +30,12 @@ def normalize(x, eps=1e-8):
     return res
 
 
-def loss(z1, z2, _lambda: float, global_batch_size: int) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+def loss(z1, z2, _lambda: float, global_batch_size: int) -> tf.Tensor:
+    """
+    Loss calculation with 2 terms: Invariance term and Redundancy reduction term.
+    The lambda scalar weights the lattern one
+    """
+
     z1 = tf.cast(z1, dtype=tf.float32)
     z2 = tf.cast(z2, dtype=tf.float32)
 
@@ -44,7 +49,6 @@ def loss(z1, z2, _lambda: float, global_batch_size: int) -> Tuple[tf.Tensor, tf.
     z2 = normalize(z2)
 
     c = tf.transpose(z1) @ z2
-    # TODO: should I remove this?
     c = c / local_batch_size
 
     # This is the invariance term
@@ -59,7 +63,7 @@ def loss(z1, z2, _lambda: float, global_batch_size: int) -> Tuple[tf.Tensor, tf.
     loss = on_diag + off_diag
 
     # This is needed as we distributed the training across multiple GPUs but we already
-    # averaged the correlation matrix with the local batch size
+    # averaged the correlation matrix with the "local" batch size
     loss = loss / (global_batch_size / local_batch_size)
 
     return loss
